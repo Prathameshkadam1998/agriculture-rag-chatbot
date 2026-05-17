@@ -1,0 +1,22 @@
+DATASET_NAME = "KisanVaani/agriculture-qa-english-only"
+
+CHUNK_SIZE = 100
+CHUNK_OVERLAP = 20
+MAX_SENTENCES = 4
+OVERLAP_SENTENCES = 1
+
+TOP_K_SEMANTIC = 20
+TOP_K_BM25 = 20
+RRF_K = 60
+FINAL_TOP_K = 5
+
+EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+CROSS_ENCODER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+GENERATOR_MODEL_NAME = "google/flan-t5-base"
+
+MAX_CONTEXT_WORDS = 450
+MAX_NEW_TOKENS = 220
+
+EVAL_SIZE = 50
+K_VALUES = [1, 3, 5]
+
