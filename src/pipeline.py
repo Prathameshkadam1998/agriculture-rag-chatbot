@@ -9,6 +9,10 @@ import numpy as np
 from retrieval import bm25_search, reciprocal_rank_fusion, semantic_search
 
 
+def default_query_expander(query):
+    return query
+
+
 class AgriRAGPipeline:
     """Hybrid FAISS + BM25 pipeline with optional cross-encoder reranking."""
 
@@ -25,6 +29,7 @@ class AgriRAGPipeline:
         final_top_k=5,
         rrf_k=60,
         use_reranker=True,
+        query_expander=None,
     ):
         self.embedding_model = embedding_model
         self.faiss_index = faiss_index
@@ -37,14 +42,19 @@ class AgriRAGPipeline:
         self.final_top_k = final_top_k
         self.rrf_k = rrf_k
         self.use_reranker = use_reranker
+        self.query_expander = query_expander or default_query_expander
         self.cache = {}
 
     def query(self, query, use_cache=True):
-        if use_cache and query in self.cache:
-            return self.cache[query]
+        cache_key = query
+
+        if use_cache and cache_key in self.cache:
+            return self.cache[cache_key]
+
+        expanded_query = self.query_expander(query)
 
         semantic_results = semantic_search(
-            query=query,
+            query=expanded_query,
             embedding_model=self.embedding_model,
             faiss_index=self.faiss_index,
             chunks=self.chunks,
@@ -52,7 +62,7 @@ class AgriRAGPipeline:
         )
 
         bm25_results = bm25_search(
-            query=query,
+            query=expanded_query,
             bm25_index=self.bm25_index,
             bm25_chunks=self.bm25_chunks,
             embedding_chunks=self.chunks,
@@ -72,6 +82,8 @@ class AgriRAGPipeline:
                 "chunk": self.chunks[cid],
                 "score": item["score"],
                 "metadata": self.metadata[cid],
+                "original_query": query,
+                "expanded_query": expanded_query,
             }
             results.append(result)
 
@@ -92,7 +104,7 @@ class AgriRAGPipeline:
         results = results[: self.final_top_k]
 
         if use_cache:
-            self.cache[query] = results
+            self.cache[cache_key] = results
 
         return results
 
@@ -107,6 +119,7 @@ class SemanticOnlyPipeline:
         chunks,
         metadata,
         final_top_k=5,
+        query_expander=None,
         **_,
     ):
         self.embedding_model = embedding_model
@@ -114,14 +127,19 @@ class SemanticOnlyPipeline:
         self.chunks = chunks
         self.metadata = metadata
         self.final_top_k = final_top_k
+        self.query_expander = query_expander or default_query_expander
         self.cache = {}
 
     def query(self, query, use_cache=True):
-        if use_cache and query in self.cache:
-            return self.cache[query]
+        cache_key = query
+
+        if use_cache and cache_key in self.cache:
+            return self.cache[cache_key]
+
+        expanded_query = self.query_expander(query)
 
         results = semantic_search(
-            query=query,
+            query=expanded_query,
             embedding_model=self.embedding_model,
             faiss_index=self.faiss_index,
             chunks=self.chunks,
@@ -130,9 +148,11 @@ class SemanticOnlyPipeline:
 
         for result in results:
             result["metadata"] = self.metadata[result["chunk_id"]]
+            result["original_query"] = query
+            result["expanded_query"] = expanded_query
 
         if use_cache:
-            self.cache[query] = results
+            self.cache[cache_key] = results
 
         return results
 
@@ -146,11 +166,15 @@ class HybridCEPipeline(AgriRAGPipeline):
         self.bm25_weight = bm25_weight
 
     def query(self, query, use_cache=True):
-        if use_cache and query in self.cache:
-            return self.cache[query]
+        cache_key = query
+
+        if use_cache and cache_key in self.cache:
+            return self.cache[cache_key]
+
+        expanded_query = self.query_expander(query)
 
         semantic_results = semantic_search(
-            query=query,
+            query=expanded_query,
             embedding_model=self.embedding_model,
             faiss_index=self.faiss_index,
             chunks=self.chunks,
@@ -158,7 +182,7 @@ class HybridCEPipeline(AgriRAGPipeline):
         )
 
         bm25_results = bm25_search(
-            query=query,
+            query=expanded_query,
             bm25_index=self.bm25_index,
             bm25_chunks=self.bm25_chunks,
             embedding_chunks=self.chunks,
@@ -166,17 +190,27 @@ class HybridCEPipeline(AgriRAGPipeline):
         )
 
         blended = {}
+
         for result in semantic_results:
             blended[result["chunk_id"]] = self.semantic_weight * result["score"]
 
         bm25_scores = np.array([result["score"] for result in bm25_results], dtype=float)
+
         if bm25_scores.size and bm25_scores.max() > bm25_scores.min():
-            bm25_scores = (bm25_scores - bm25_scores.min()) / (bm25_scores.max() - bm25_scores.min())
+            bm25_scores = (
+                bm25_scores - bm25_scores.min()
+            ) / (
+                bm25_scores.max() - bm25_scores.min()
+            )
 
         for result, norm_score in zip(bm25_results, bm25_scores):
-            blended[result["chunk_id"]] = blended.get(result["chunk_id"], 0.0) + self.bm25_weight * float(norm_score)
+            blended[result["chunk_id"]] = (
+                blended.get(result["chunk_id"], 0.0)
+                + self.bm25_weight * float(norm_score)
+            )
 
         ranked_ids = sorted(blended, key=blended.get, reverse=True)
+
         results = []
         for cid in ranked_ids[: self.retrieval_pool_k]:
             results.append({
@@ -184,6 +218,8 @@ class HybridCEPipeline(AgriRAGPipeline):
                 "chunk": self.chunks[cid],
                 "score": float(blended[cid]),
                 "metadata": self.metadata[cid],
+                "original_query": query,
+                "expanded_query": expanded_query,
             })
 
         if self.use_reranker and self.cross_encoder is not None and results:
@@ -203,6 +239,6 @@ class HybridCEPipeline(AgriRAGPipeline):
         results = results[: self.final_top_k]
 
         if use_cache:
-            self.cache[query] = results
+            self.cache[cache_key] = results
 
         return results
