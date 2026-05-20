@@ -91,7 +91,13 @@ DOMAIN_STOPWORDS = {
     "give",
     "help",
     "question",
-    "answer"
+    "answer",
+    "use",
+    "used",
+    "soil",
+    "may",
+    "also",
+    "name"
 }
 
 # =========================
