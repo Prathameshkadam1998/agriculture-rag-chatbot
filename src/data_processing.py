@@ -26,6 +26,12 @@ def clean_for_bm25(text, stopwords):
 
 
 def chunk_sentence_based(text, max_sentences=MAX_SENTENCES, overlap_sentences=OVERLAP_SENTENCES):
+    if not isinstance(text, str) or not text.strip():
+        return []
+
+    if overlap_sentences >= max_sentences:
+        raise ValueError("overlap_sentences must be smaller than max_sentences")
+
     sentences = sent_tokenize(text)
 
     if len(sentences) <= max_sentences:
@@ -35,8 +41,9 @@ def chunk_sentence_based(text, max_sentences=MAX_SENTENCES, overlap_sentences=OV
     start = 0
 
     while start < len(sentences):
-        chunk = " ".join(sentences[start:start + max_sentences])
-        chunks.append(chunk)
+        chunk = " ".join(sentences[start:start + max_sentences]).strip()
+        if chunk:
+            chunks.append(chunk)
         start += max_sentences - overlap_sentences
 
     return chunks
@@ -64,13 +71,14 @@ def build_chunks(df, bm25_stopwords):
 
             embedding_chunks.append(chunk_text)
             bm25_chunks.append(clean_for_bm25(chunk_text, bm25_stopwords))
+
             metadata.append({
                 "chunk_id": chunk_id,
                 "source_row": idx,
                 "original_question": row["question"],
                 "original_answer": row["answers"],
+                "answer_chunk": answer_chunk,
                 "chunk_text": chunk_text,
             })
 
     return embedding_chunks, bm25_chunks, metadata
-
