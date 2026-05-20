@@ -90,6 +90,8 @@ DOMAIN_STOPWORDS = {
     "tell",
     "give",
     "help",
+    "question",
+    "answer"
 }
 
 # =========================
