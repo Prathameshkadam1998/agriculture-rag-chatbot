@@ -20,6 +20,11 @@ def clean_notebook(path):
         cell_metadata = cell.setdefault("metadata", {})
         cell_metadata.pop("widgets", None)
 
+        for output in cell.get("outputs", []):
+            data = output.get("data")
+            if isinstance(data, dict):
+                data.pop("application/vnd.jupyter.widget-view+json", None)
+
     notebook_path.write_text(
         json.dumps(notebook, indent=1, ensure_ascii=False) + "\n",
         encoding="utf-8",
