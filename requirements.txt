@@ -1,20 +1,11 @@
-datasets
-sentence-transformers
-faiss-cpu
-rank-bm25
-transformers
-torch
-torchvision
-torchaudio
-nltk
-tqdm
-pandas
-numpy
-scikit-learn
-tabulate
-rouge-score
-matplotlib
-seaborn
-ipykernel
-notebook
-
+# Runtime dependencies of the deployed web app.
+# Deliberately small: no PyTorch, so the app fits a free 512 MB instance.
+fastapi==0.162.4
+uvicorn==0.54.0
+onnxruntime==1.31.1
+tokenizers==0.23.3
+huggingface-hub==1.33.0
+faiss-cpu==1.16.0
+rank-bm25==0.2.2
+numpy==2.5.4
+httpx==0.28.1

@@ -1,0 +1,20 @@
+# Render Blueprint - https://render.com/docs/blueprint-spec
+# In the Render dashboard: New > Blueprint > pick this repository.
+services:
+  - type: web
+    name: agribot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python -m scripts.download_models
+    # Models are downloaded during the build, so start-up needs no network.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: MODEL_CACHE_DIR
+        value: .models
+      - key: ONNX_THREADS
+        value: "1"
+      - key: RERANK_POOL
+        value: "12"

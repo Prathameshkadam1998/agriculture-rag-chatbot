@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AgriBot — farming answers with sources</title>
+  <meta name="description" content="Ask a farming question and get an answer grounded in a knowledge base of agriculture Q&amp;As, with the sources shown.">
+  <meta name="theme-color" content="#f5f1e6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#10160f" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try {
+      var saved = localStorage.getItem("agribot-theme");
+      if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#question">Skip to question box</a>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="About AgriBot">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="32" height="32"><path d="M16 29V15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M16 17C16 10 11 6 4.5 6c0 7 4.5 11 11.5 11Z" fill="currentColor"/><path d="M16 21c0-5.5 4-9 11.5-9 0 6-4.5 9-11.5 9Z" fill="currentColor" opacity=".62"/></svg>
+        </span>
+        <span class="brand-name">AgriBot</span>
+      </div>
+
+      <button class="btn btn-quiet new-chat" id="new-chat" type="button">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        New conversation
+      </button>
+
+      <section class="side-section">
+        <h2>How an answer is made</h2>
+        <ol class="steps">
+          <li><strong>Search twice</strong><span>Meaning search (FAISS) and keyword search (BM25) each pull their best 20 passages.</span></li>
+          <li><strong>Fuse</strong><span>Reciprocal Rank Fusion merges both lists into one.</span></li>
+          <li><strong>Rerank</strong><span>A cross-encoder reads every candidate against your question and re-scores it.</span></li>
+          <li><strong>Answer</strong><span>The reply is written only from the top sources, which you can open and check.</span></li>
+        </ol>
+      </section>
+
+      <section class="side-section">
+        <h2>Knowledge base</h2>
+        <dl class="stats">
+          <div><dt>Farmer Q&amp;As</dt><dd id="stat-rows">—</dd></div>
+          <div><dt>Unique passages</dt><dd id="stat-chunks">—</dd></div>
+        </dl>
+        <p class="fineprint">Dataset: <a href="https://huggingface.co/datasets/KisanVaani/agriculture-qa-english-only" target="_blank" rel="noopener">KisanVaani agriculture-qa</a></p>
+      </section>
+
+      <p class="fineprint side-foot">
+        Educational demo. Confirm with a local extension officer before applying any chemical.
+        <a href="https://github.com/Prathameshkadam1998/agriculture-rag-chatbot" target="_blank" rel="noopener">Source on GitHub</a>
+      </p>
+    </aside>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Open the about panel" aria-controls="sidebar" aria-expanded="false">
+          <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <span class="topbar-title">AgriBot</span>
+        <span class="status" id="status" data-state="loading"><i aria-hidden="true"></i><span id="status-text">Connecting…</span></span>
+        <button class="icon-btn" id="theme-btn" type="button" aria-label="Switch between light and dark theme">
+          <svg class="sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="3.6" fill="currentColor"/><path d="M10 1.8v2.4M10 15.8v2.4M1.8 10h2.4M15.8 10h2.4M4.2 4.2l1.7 1.7M14.1 14.1l1.7 1.7M4.2 15.8l1.7-1.7M14.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg class="moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z" fill="currentColor"/></svg>
+        </button>
+      </header>
+
+      <div class="thread-wrap" id="thread-wrap">
+        <div class="thread" id="thread">
+          <section class="welcome" id="welcome">
+            <p class="eyebrow">Hybrid retrieval · cited answers</p>
+            <h1>Straight answers<br>for the field.</h1>
+            <p class="lede">Ask about crops, pests, diseases, soil, fertiliser or irrigation. AgriBot finds the best evidence in its knowledge base and shows you exactly where the answer came from.</p>
+            <div class="examples" id="examples" aria-label="Example questions"></div>
+          </section>
+          <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Conversation"></div>
+        </div>
+      </div>
+
+      <footer class="composer-wrap">
+        <form class="composer" id="composer" autocomplete="off">
+          <label class="visually-hidden" for="question">Your farming question</label>
+          <textarea id="question" name="question" rows="1" maxlength="400" placeholder="Ask a farming question…" required></textarea>
+          <button class="send" id="send" type="submit" aria-label="Send question" disabled>
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 16V4M4.5 9.5 10 4l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          </button>
+        </form>
+        <p class="composer-hint"><span id="hint-text">Each question is answered on its own — include the crop and the problem.</span><span class="count" id="count" hidden></span></p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

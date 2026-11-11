@@ -1,0 +1,28 @@
+# Everything in requirements.txt, plus what is needed to rebuild the index,
+# run the tests, and work on the research notebook.
+-r requirements.txt
+
+# Rebuilding the index (python -m scripts.build_index)
+datasets>=2.20
+pandas>=2.1
+nltk>=3.9
+tqdm>=4.66
+
+# Tests and linting
+pytest>=8.0
+ruff>=0.6
+
+# Research notebook (notebooks/00_agriculture_rag_from_scratch.ipynb)
+torch>=2.2
+sentence-transformers>=3.0
+transformers>=4.44
+sentencepiece
+scikit-learn
+umap-learn
+rouge-score
+bert-score
+tabulate
+matplotlib
+seaborn
+ipykernel
+notebook

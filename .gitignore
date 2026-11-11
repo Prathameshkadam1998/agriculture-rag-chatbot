@@ -4,8 +4,9 @@ __pycache__/
 *.pyo
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 
-# Environments
+# Environments and secrets
 .env
 .venv/
 venv/
@@ -14,7 +15,8 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
-# Large generated files
+# Downloaded models and large generated files
+.models/
 data/raw/*
 data/processed/*
 models/*
@@ -26,9 +28,11 @@ reports/figures/*
 !models/.gitkeep
 !reports/figures/.gitkeep
 
+# data/index/ is intentionally committed: it is the small pre-built index
+# (about 4 MB) that the web app loads at start-up.
+
 # OS/editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-

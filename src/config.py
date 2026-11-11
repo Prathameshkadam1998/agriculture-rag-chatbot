@@ -148,3 +148,32 @@ TOPIC_QUERIES = {
     "soil": "How to improve soil fertility?",
     "irrigation": "How often should I irrigate my crop?",
 }
+
+# =========================
+# Deployed app (lightweight ONNX runtime)
+# =========================
+
+# Pre-built index that ships with the repo. Rebuild with:
+#   python -m scripts.build_index
+INDEX_DIR = "data/index"
+
+# int8-quantised ONNX exports of the same models the notebook selected. They
+# run on onnxruntime (no PyTorch), which keeps the app inside a 512 MB instance.
+ONNX_EMBEDDING_REPO = "Xenova/bge-small-en-v1.5"          # BAAI/bge-small-en-v1.5
+ONNX_EMBEDDING_FILE = "onnx/model_quantized.onnx"
+ONNX_RERANKER_REPO = "Xenova/ms-marco-MiniLM-L-6-v2"      # cross-encoder/ms-marco-MiniLM-L-6-v2
+ONNX_RERANKER_FILE = "onnx/model_quantized.onnx"
+
+# How many sources are shown to the user / passed to the generator.
+ANSWER_TOP_K = 3
+
+# Relevance = sigmoid(cross-encoder logit) of the best passage.
+CONFIDENCE_HIGH = 0.75
+CONFIDENCE_MEDIUM = 0.30
+# Below this the question is treated as outside the knowledge base.
+MIN_RELEVANCE = 0.05
+# Between this and MIN_RELEVANCE the question is a near miss: no answer, but the
+# closest questions are offered as suggestions.
+NEAR_MISS_RELEVANCE = 0.001
+
+MAX_QUESTION_CHARS = 400
