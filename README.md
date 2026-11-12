@@ -3,6 +3,10 @@
 Ask a farming question and get an answer grounded in a knowledge base of
 agriculture Q&As, with the sources shown next to it.
 
+**Live demo: <https://agribot-a6nq.onrender.com>** — it runs on a free
+instance that sleeps when idle, so the first visit can take about a minute to
+load.
+
 AgriBot is a Retrieval-Augmented Generation (RAG) project in two parts:
 
 - **A web app** (FastAPI + a hand-written frontend) small enough to run on a
@@ -109,21 +113,26 @@ The app is sized for [Render](https://render.com)'s free web service
 Blueprint, so deployment is a few clicks:
 
 1. Push this repository to GitHub.
-2. In the Render dashboard choose **New → Blueprint** and select the repository.
+2. In the Render dashboard choose **New → Blueprint**. Either connect your
+   GitHub account and pick the repository (Render then redeploys on every
+   push), or paste the repository URL under **Public Git Repository** (no
+   GitHub access needed, but you redeploy with **Manual Deploy** after a push).
 3. Render reads `render.yaml`, installs `requirements.txt`, downloads the models
    during the build, and starts the server. No environment variables are
    required.
 4. Optional: add `LLM_API_KEY` and `LLM_MODEL` under **Environment** to switch
    from quoted to written answers.
 
-What to expect on the free plan:
+What to expect on the free plan, measured on the live demo:
 
+- The first build and deploy took about a minute and a half.
+- An answer takes about 2 seconds (it is ~0.2 s on a laptop; the free instance
+  has a tenth of a CPU). `render.yaml` lowers `RERANK_POOL` to 12 to help.
 - The service **sleeps after 15 minutes without traffic** and takes about a
   minute to wake up on the next visit.
-- With a tenth of a CPU, an answer takes a few seconds rather than the ~0.2 s
-  measured on a laptop. `render.yaml` lowers `RERANK_POOL` to 12 to help.
-- Memory: the server measured about 250 MB on macOS after 150 questions. Linux
-  numbers can differ, so check the Render metrics tab after the first deploy.
+- Memory: the server measured about 250 MB locally, against the 512 MB limit.
+  Render only shows memory graphs on paid plans, so on the free plan watch the
+  **Events** tab instead; an out-of-memory restart would appear there.
 
 Why not Hugging Face Spaces? It would be the natural home for an ML demo, but
 its documentation now says Gradio and Docker Spaces require a paid plan to
